@@ -32,6 +32,7 @@ import MemTypes::*;
 import MemreadEngine::*;
 import MemwriteEngine::*;
 
+import FlashCtrlWrapper::*;
 import FlashBusModel::*;
 import FlashCtrlModel::*;
 import ControllerTypes::*;
@@ -57,14 +58,14 @@ interface NandSimControl;
    interface NandSimRequest request;   
 endinterface
 
-module connectEnginesToFlashModel#(MemReadClient#(64) rc, MemWriteClient#(64) wc)(Empty);
+//module connectEnginesToFlashModel#(MemReadClient#(64) rc, MemWriteClient#(64) wc)(Empty);
 
    // instantiate the flash model here
    // connect rc and wc to this model
    // all addresses coming from rc and wc
    // are "physical" (offsets in the flash array)
    
-endmodule
+//endmodule
 
 module mkNandSim#(NandSimIndication indication,
 		  MemreadServer#(64) nand_ctrl_host_rs,
@@ -98,7 +99,10 @@ module mkNandSim#(NandSimIndication indication,
    Vector#(numSlaves,FIFO#(Bit#(MemTagSize)))    slaveReadTags <- replicateM(mkSizedFIFO(1));
    Vector#(numSlaves,Reg#(Bit#(BurstLenSize)))   slaveReadCnts <- replicateM(mkReg(0));
 
-   connectEnginesToFlashModel(re.dmaClient,we.dmaClient);
+   //connectEnginesToFlashModel(re.dmaClient,we.dmaClient);
+	FlashCtrlWrapper flashCtrlWrap <- mkFlashCtrlWrapper();
+	mkConnection(re.dmaClient, flashCtrlWrap.readServer);
+	mkConnection(we.dmaClient, flashCtrlWrap.writeServer);
    
    for(Integer i = 0; i < valueOf(numSlaves); i=i+1)
       rule completeSlaveReadReq;

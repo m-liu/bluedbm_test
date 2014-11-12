@@ -55,7 +55,7 @@ endinterface
 
 interface NandSimControl;
    interface NandSimRequest request;   
-   interface ReadOnly#(Bit#(32)) nandPtr;
+   //interface ReadOnly#(Bit#(32)) nandPtr;
 endinterface
 
 module mkNandSim#(NandSimIndication indication) (NandSim#(numSlaves))
@@ -96,48 +96,48 @@ module mkNandSim#(NandSimIndication indication) (NandSim#(numSlaves))
 
    function PhysMemSlave#(PhysAddrWidth,64) mms(Integer i);
       return (
-   interface PhysMemSlave;
-      interface PhysMemWriteServer write_server; 
-	 interface Put writeReq;
-	    method Action put(PhysMemRequest#(PhysAddrWidth) req);
-	       slave_write_servers[i].request.put(MemengineCmd{sglId:ns.nandPtr, base:extend(req.addr), burstLen:req.burstLen, len:extend(req.burstLen)});
-	       slaveWriteTags[i].enq(req.tag);
-            endmethod
-	 endinterface
-	 interface Put writeData;
-	    method Action put(MemData#(64) wdata);
-	       slave_write_pipes[i].enq(wdata.data);
-            endmethod
-	 endinterface
-	 interface Get writeDone;
-	    method ActionValue#(Bit#(MemTagSize)) get();
-	       let rv <- slave_write_servers[i].response.get;
-	       slaveWriteTags[i].deq;
-	       return slaveWriteTags[i].first;
-            endmethod
-	 endinterface
-      endinterface
-      interface PhysMemReadServer read_server;
-	 interface Put readReq;
-	    method Action put(PhysMemRequest#(PhysAddrWidth) req);
-	       if (verbose) $display("mkNandSim.memSlave::readReq %d %d %d (%d)", req.addr, req.burstLen, req.tag, i);
-	       slave_read_servers[i].request.put(MemengineCmd{sglId:ns.nandPtr, base:extend(req.addr), burstLen:req.burstLen, len:extend(req.burstLen)});
-	       slaveReadTags[i].enq(req.tag);
-	       slaveReadCnts[i] <= req.burstLen;
-	    endmethod
-	 endinterface
-	 interface Get  readData;
-	    method ActionValue#(MemData#(64)) get();
-	       let rv <- toGet(slave_read_pipes[i]).get;
-	       let new_slaveReadCnt = slaveReadCnts[i]-8;
-	       let last = new_slaveReadCnt==0;
-	       slaveReadCnts[i] <= new_slaveReadCnt;
-	       if (verbose) $display("mkNandSim.memSlave::readData %d %d %d %d (%d)", slaveReadTags[i].first, last, rv, slaveReadCnts[i], i);
-	       return MemData{data:rv, tag:slaveReadTags[i].first,last:last};
-            endmethod
-	 endinterface
-      endinterface
-   endinterface
+			interface PhysMemSlave;
+				interface PhysMemWriteServer write_server; 
+					interface Put writeReq;
+						method Action put(PhysMemRequest#(PhysAddrWidth) req);
+							slave_write_servers[i].request.put(MemengineCmd{sglId:ns.nandPtr, base:extend(req.addr), burstLen:req.burstLen, len:extend(req.burstLen)});
+							slaveWriteTags[i].enq(req.tag);
+						endmethod
+					endinterface
+					interface Put writeData;
+						method Action put(MemData#(64) wdata);
+							slave_write_pipes[i].enq(wdata.data);
+						endmethod
+					endinterface
+					interface Get writeDone;
+						method ActionValue#(Bit#(MemTagSize)) get();
+							let rv <- slave_write_servers[i].response.get;
+							slaveWriteTags[i].deq;
+							return slaveWriteTags[i].first;
+						endmethod
+					endinterface
+				endinterface
+				interface PhysMemReadServer read_server;
+					interface Put readReq;
+						method Action put(PhysMemRequest#(PhysAddrWidth) req);
+							if (verbose) $display("mkNandSim.memSlave::readReq %d %d %d (%d)", req.addr, req.burstLen, req.tag, i);
+							slave_read_servers[i].request.put(MemengineCmd{sglId:ns.nandPtr, base:extend(req.addr), burstLen:req.burstLen, len:extend(req.burstLen)});
+							slaveReadTags[i].enq(req.tag);
+							slaveReadCnts[i] <= req.burstLen;
+						endmethod
+					endinterface
+					interface Get  readData;
+						method ActionValue#(MemData#(64)) get();
+							let rv <- toGet(slave_read_pipes[i]).get;
+							let new_slaveReadCnt = slaveReadCnts[i]-8;
+							let last = new_slaveReadCnt==0;
+							slaveReadCnts[i] <= new_slaveReadCnt;
+							if (verbose) $display("mkNandSim.memSlave::readData %d %d %d %d (%d)", slaveReadTags[i].first, last, rv, slaveReadCnts[i], i);
+							return MemData{data:rv, tag:slaveReadTags[i].first,last:last};
+						endmethod
+					endinterface
+				endinterface
+			endinterface
 	      );
    endfunction
    interface memSlaves = map(mms,genVector);

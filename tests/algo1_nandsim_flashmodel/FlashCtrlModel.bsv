@@ -28,35 +28,9 @@ import Vector::*;
 import RegFile::*;
 
 
-import AuroraGearbox::*;
-import AuroraImportFmc1::*;
 import ControllerTypes::*;
-import FlashCtrlVirtex::*;
+//import FlashCtrlVirtex::*;
 import FlashBusModel::*;
-
-//simulator options
-//Integer BSIM_CHIPS_PER_BUS 	= 2;
-//Integer BSIM_BLOCKS_PER_CHIP 	= 2;
-//Integer BSIM_PAGES_PER_BLOCK	= 2;
-//Integer BSIM_BUSES				= 4;
-
-//use hashed read data (so we don't have to write before read)
-//Integer BSIM_USE_HASHED_DATA	= 1; 
-
-/*
-interface FlashCtrlUser;
-	method Action sendCmd (FlashCmd cmd);
-	method Action writeWord (Bit#(128) data, TagT tag);
-	method ActionValue#(Tuple2#(Bit#(128), TagT)) readWord ();
-	method ActionValue#(TagT) writeDataReq();
-	method ActionValue#(Tuple2#(TagT, StatusT)) ackStatus ();
-endinterface
-interface FlashCtrlVirtexIfc;
-	interface FlashCtrlUser user;
-	interface Aurora_Pins#(4) aurora;
-	interface FCVirtexDebug debug;
-endinterface
-*/
 
 
 
@@ -64,8 +38,7 @@ endinterface
 (* descending_urgency = "forwardReads, forwardReads_1, forwardReads_2, forwardReads_3, forwardReads_4, forwardReads_5, forwardReads_6, forwardReads_7" *) 
 (* descending_urgency = "forwardWrDataReq, forwardWrDataReq_1, forwardWrDataReq_2, forwardWrDataReq_3, forwardWrDataReq_4, forwardWrDataReq_5, forwardWrDataReq_6, forwardWrDataReq_7" *)
 (* descending_urgency = "forwardAck, forwardAck_1, forwardAck_2, forwardAck_3, forwardAck_4, forwardAck_5, forwardAck_6, forwardAck_7" *)
-module mkFlashCtrlModel#(
-	Clock gtx_clk_p, Clock gtx_clk_n, Clock clk250) (FlashCtrlVirtexIfc);
+module mkFlashCtrlModel(FlashCtrlUser);
 
 	//Flash bus models
 	Vector#(NUM_BUSES, FlashBusModelIfc) flashBuses <- replicateM(mkFlashBusModel());
@@ -76,7 +49,7 @@ module mkFlashCtrlModel#(
 	FIFO#(Tuple2#(TagT, StatusT)) ackQ <- mkSizedFIFO(16);
 	
 	//GTX-GTP Aurora. Unused in model
-	AuroraIfc auroraIntra <- mkAuroraIntra(gtx_clk_p, gtx_clk_n, clk250);
+	//AuroraIfc auroraIntra <- mkAuroraIntra(gtx_clk_p, gtx_clk_n, clk250);
 
 
 	//handle reads, acks, writedataReq
@@ -98,7 +71,6 @@ module mkFlashCtrlModel#(
 	end
 
 
-	interface FlashCtrlUser user;
 		method Action sendCmd (FlashCmd cmd);
 			tagTable.upd(cmd.tag, cmd);
 			flashBuses[cmd.bus].sendCmd(cmd);
@@ -123,11 +95,6 @@ module mkFlashCtrlModel#(
 			ackQ.deq();
 			return ackQ.first();
 		endmethod
-	endinterface
-
-	interface FCVirtexDebug debug = ?;
-
-	interface Aurora_Pins aurora = auroraIntra.aurora;
 
 endmodule
 
